@@ -1,13 +1,17 @@
 package com.tpadsz.utils.merger;
 
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Roger on 2016/1/21.
  */
-public class Main implements Runnable{
+public class MergeSort implements Runnable{
     public static void main(String[] argv){
         if(argv.length<1){
             System.out.println("Need at least 1 file to merge.");
@@ -27,7 +31,7 @@ public class Main implements Runnable{
         }
 
         try {
-            new Thread(new Main(files.toArray(new File[files.size()]))).start();
+            new Thread(new MergeSort(files.toArray(new File[files.size()]))).start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -37,7 +41,7 @@ public class Main implements Runnable{
     BufferedReader readers[];
     String latestLine=null;
     String[] lineBuffer=null;
-    private Main(File[] argv) throws IOException {
+    private MergeSort(File[] argv) throws IOException {
         this.files=argv;
         this.readers=new BufferedReader[this.files.length];
         this.lineBuffer=new String[this.files.length];
