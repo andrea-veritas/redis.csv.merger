@@ -41,19 +41,28 @@ public class Main implements Runnable{
         this.files=argv;
         this.readers=new BufferedReader[this.files.length];
         this.lineBuffer=new String[this.files.length];
+
         for(int i=0;i<this.files.length;i++){
             this.readers[i]=new BufferedReader(new FileReader(this.files[i]));
             lineBuffer[i]=this.readers[i].readLine();
         }
     }
 
+
+
     public void run() {
-
-
-
-
-
-
+        StringArrayComparator cmp=new StringArrayComparator(this.lineBuffer);
+        while(isNullArray(lineBuffer)==false){
+            cmp.setArray(lineBuffer);
+            int index=cmp.min();
+            System.out.println(this.lineBuffer[index]);
+            try {
+                this.lineBuffer[index]=this.readers[index].readLine();
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+                this.lineBuffer[index]=null;
+            }
+        }
         try {
             close();
         } catch (IOException e) {
@@ -62,6 +71,17 @@ public class Main implements Runnable{
     }
 
 
+    private boolean isNullArray(Object[] array){
+        if(array==null){
+            return true;
+        }
+        for(Object obj:array){
+            if(obj!=null){
+                return false;
+            }
+        }
+        return true;
+    }
 
     private void close() throws IOException {
         for(BufferedReader rd:this.readers){

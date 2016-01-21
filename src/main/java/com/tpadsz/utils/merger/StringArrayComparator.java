@@ -4,11 +4,15 @@ package com.tpadsz.utils.merger;
  * Created by Roger on 2016/1/21.
  */
 public class StringArrayComparator {
+
+
     String[] array;
     public StringArrayComparator(String[] array) {
         this.array = array;
     }
-
+    public void setArray(String[] array) {
+        this.array = array;
+    }
     public int max(){
         return findMaxOrMinElementIndex(this.array,true);
     }
@@ -16,6 +20,7 @@ public class StringArrayComparator {
     public int min(){
         return findMaxOrMinElementIndex(this.array,false);
     }
+
 
     private int findMaxOrMinElementIndex(String[] array,boolean max){
         if(array==null||array.length<1){
@@ -40,4 +45,6 @@ public class StringArrayComparator {
             return i>0;
         }
     }
+
+
 }
