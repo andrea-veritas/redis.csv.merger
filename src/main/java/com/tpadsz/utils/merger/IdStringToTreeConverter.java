@@ -6,10 +6,13 @@ import java.util.Arrays;
 
 /**
  * Created by roger.wang on 2016/1/22.
+ *
+ * Converts "_" split ids to paths.
  */
 public class IdStringToTreeConverter {
     private String _id;
     private String treePath[];
+
     public IdStringToTreeConverter(String _id){
         this._id=_id;
     }
@@ -55,5 +58,15 @@ public class IdStringToTreeConverter {
 
     public String[] getTreePath(){
         return this.treePath==null?exec():this.treePath;
+    }
+
+    public static String getRoot(String _id){
+        String[] path=new IdStringToTreeConverter(_id).getTreePath();
+        if(path==null || path.length<1){
+            return _id;
+        }else{
+            return path[0];
+        }
+
     }
 }

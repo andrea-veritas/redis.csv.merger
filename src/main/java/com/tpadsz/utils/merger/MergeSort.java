@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -61,7 +62,14 @@ public class MergeSort implements Runnable{
             int index=cmp.min();
             System.out.println(this.lineBuffer[index]);
             try {
-                this.lineBuffer[index]=this.readers[index].readLine();
+                String line=this.readers[index].readLine();
+                if(line!=null) {
+                    this.lineBuffer[index] = line;
+                }else{
+                    this.readers[index].close();
+                    this.lineBuffer=new NullRemoverForArrays<String>(this.lineBuffer).getNoNullArray();
+                    this.readers=new NullRemoverForArrays<BufferedReader>(this.readers).getNoNullArray();
+                }
             } catch (IOException e) {
                 System.err.println(e.getMessage());
                 this.lineBuffer[index]=null;
@@ -92,4 +100,33 @@ public class MergeSort implements Runnable{
             rd.close();
         }
     }
+}
+
+class NullRemoverForArrays<E>{
+    E[] array;
+    List<E> newList;
+    E[] newArray;
+    public NullRemoverForArrays(E[] array) {
+        this.array = array;
+
+        if(array!=null){
+            newList=new ArrayList<E>(array.length);
+            for(int i=0;i<array.length;i++){
+                newList.add(array[i]);
+            }
+            newArray=newList.toArray(newArray);
+        }else{
+            newList=null;
+        }
+    }
+
+    public E[] getNoNullArray(){
+        if(newList==null){
+            return null;
+        }
+        return newArray;
+    }
+
+
+
 }

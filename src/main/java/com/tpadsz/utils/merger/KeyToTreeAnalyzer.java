@@ -1,16 +1,14 @@
 package com.tpadsz.utils.merger;
 
-import com.alibaba.fastjson.JSON;
 import com.tpadsz.utils.merger.contants.BeanOfferEventType;
 import com.tpadsz.utils.merger.entities.BeanOfferEvent;
 import com.tpadsz.utils.merger.entities.MongodbJsonBean;
 
 import java.io.*;
+import java.lang.ref.SoftReference;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -37,7 +35,7 @@ public class KeyToTreeAnalyzer implements Runnable{
             try {
                 reader.close();
             }catch (IOException e){
-
+                System.err.println(e.getMessage());
             }finally {
                 System.exit(0);
             }
@@ -50,27 +48,28 @@ public class KeyToTreeAnalyzer implements Runnable{
 
             Map<String,Thread> threadPool=new HashMap<String, Thread>();
             Thread latestThread=null;
+            BlockingQueue<BeanOfferEvent<MongodbJsonBean>> latestQueue=null;
+
             // Begin to process the forest.
             while((line=reader.readLine())!=null){
 
                 BlockingQueue<BeanOfferEvent<BeanOfferEventType>> queue=new LinkedBlockingQueue<BeanOfferEvent<BeanOfferEventType>>();
                 MongodbJsonBean bean = MongodbJsonBean.fromCSV(line);
-                if(bean.get_id().equals(root)==false){
-                    // This "if" means we are going to a new tree.
 
+                if(IdStringToTreeConverter.getRoot(bean.get_id()).equals(root)==false){
+                    // This "if" means we are going to a new tree.
+                    root=IdStringToTreeConverter.getRoot(bean.get_id());
+                    if(latestQueue!=null){
+                        latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(null,BeanOfferEventType.EVENT_BEAN_OFFER_END));
+                    }
+                    latestQueue=new LinkedBlockingQueue<BeanOfferEvent<MongodbJsonBean>>();
+                    latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(bean,BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
+                    latestThread=new Thread(new JsonBeanReceiver(latestQueue));
+                    latestThread.start();
 
                 }else{
-
+                    latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(bean,BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
                 }
-
-                /*
-                System.out.println(
-                        JSON.toJSON(MongodbJsonBean.fromCSV(line)
-                        )
-                );
-                */
-
-
 
             }
         } catch (IOException e) {
@@ -95,6 +94,11 @@ class JsonBeanReceiver implements  Runnable{
 
     File fTree=null;
     BufferedWriter out=null;
+    //Map<String,Long> pathSizeMap=new HashMap<String, Long>();
+
+
+    SoftReference<Map<String,Long>> refMap=new SoftReference<Map<String, Long>>(new HashMap<String, Long>());
+
 
     BlockingQueue<BeanOfferEvent<MongodbJsonBean>> queue;
     public JsonBeanReceiver(BlockingQueue<BeanOfferEvent<MongodbJsonBean>> queue) {
@@ -102,51 +106,110 @@ class JsonBeanReceiver implements  Runnable{
     }
     public void run() {
         int retryCounter=0;
-        Map<String,Long> branches=new HashMap<String, Long>();
+
 
         while(true) {
             try {
                 BeanOfferEvent<MongodbJsonBean> event = queue.poll(1000L, TimeUnit.MILLISECONDS);
+
+                System.out.println(String.format("Received BeanOfferEvent: %s",event.getElement()==null?"null":event.getElement().toString()));
+
                 if (BeanOfferEventType.EVENT_BEAN_OFFER_ADD.equals(event.getEventType())) {
                     String _id=event.getElement().get_id();
                     if(out==null){
                         try {
-                            createFile(_id.substring(0,_id.indexOf("-")));
+                            if(_id.contains("_")){
+                                createFile(_id.substring(0,_id.indexOf("_")));
+                            }else{
+                                createFile(_id);
+                            }
+
                         }catch (Exception ex){
                             System.err.println(String.format("Fatal! Cannot create file %s\nException: %s",fTree.getAbsolutePath(),ex.getMessage()));
-                            break;
+                            try {
+                                finish();
+                            } catch (Exception e) {
+                                System.err.println(e.getMessage());
+                            }
+                            Thread.currentThread().interrupt();
                         }
-                    }else{
-                        try {
-                            out.write(JSON.toJSONString(event.getElement()));
-                        } catch (IOException ex) {
-                            System.err.println(String.format("Fatal! Cannot write to file %s\nwith _id %s\nException: %s",fTree.getAbsolutePath(),_id,ex.getMessage()));
-                            break;
-                        }
+                    }
+                    try {
+                        String json=event.getElement().toString();
+                        out.write(json);
+                        System.out.println(String.format("Write leaf to buffer: %s",json));
 
-                        if(_id.contains("_")){
-                            
+                        out.newLine();
+                    } catch (IOException ex) {
+                        System.err.println(String.format("Fatal! Cannot write to file %s\nwith _id %s\nException: %s",fTree.getAbsolutePath(),_id,ex.getMessage()));
+                        try {
+                            finish();
+                        } catch (Exception e) {
+                            System.err.println(e.getMessage());
+                        }
+                        Thread.currentThread().interrupt();
+                    }
+
+                    if(_id.contains("_")){
+                        String[] paths=new IdStringToTreeConverter(_id).getTreePath();
+                        // ignore the last path which must be the path to the leaf node.
+                        for(int i=0;i<paths.length-1;i++){
+                            String path=paths[i];
+                            if(refMap.get().containsKey(path)){
+                                refMap.get().put(path, refMap.get().get(path) + event.getElement().getSize_in_bytes());
+                            }else{
+                                refMap.get().put(path, event.getElement().getSize_in_bytes());
+                            }
                         }
                     }
 
-
                 } else if (BeanOfferEventType.EVENT_BEAN_OFFER_END.equals(event.getEventType())) {
+                    System.out.println(String.format("Received end event for path"));
+                    for(String path:refMap.get().keySet()){
+                        Long size_in_bytes=refMap.get().get(path);
+                        String csvLine=String.format("\"%s\",%s",path,Long.toString(size_in_bytes));
+                        String json=MongodbJsonBean.fromCSV(csvLine).setIs_leaf(false).toString();
+                        try {
+                            out.write(json);
+                            System.out.println(String.format("Writing analyzed path to buffer: %s",json));
+                            out.newLine();
+                        } catch (IOException e) {
+                            System.err.println(e.getMessage());
+                            try {
+                                finish();
+                            } catch (Exception e1) {
+                                System.err.println(e1.getMessage());
+                            }
+                            Thread.currentThread().interrupt();
+                        }
+                    }
 
-
-                    break;
+                    try {
+                        finish();
+                    } catch (Exception e) {
+                        System.err.println(e.getMessage());
+                    }finally {
+                        Thread.currentThread().interrupt();
+                    }
                 }
 
             } catch (InterruptedException e) {
                 if(++retryCounter>MAX_RETRY_COUNT){
-                    break;
-                    //Thread.currentThread().interrupt();
+                    //break;
+                    try {
+                        finish();
+                    } catch (Exception e1) {
+                        System.err.println(e1.getMessage());
+                    }
+                    Thread.currentThread().interrupt();
                 }
             }
         }
 
     }
 
-    private void closeFile() throws Exception{
+    private void finish() throws Exception{
+        refMap.clear();
         if(out!=null){
             out.flush();
             out.close();
@@ -154,12 +217,13 @@ class JsonBeanReceiver implements  Runnable{
     }
 
     private void createFile(String treeName) throws Exception{
-        fTree=new File(treeName);
+        fTree=new File("forest/"+treeName);
         if(fTree.exists()){
             fTree.delete();
         }
         fTree.createNewFile();
         out=new BufferedWriter(new FileWriter(fTree));
 
+        System.out.println(String.format("Created tree file: %s",fTree.getAbsolutePath()));
     }
 }

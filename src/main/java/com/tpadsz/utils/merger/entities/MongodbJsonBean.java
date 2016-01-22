@@ -1,5 +1,7 @@
 package com.tpadsz.utils.merger.entities;
 
+import com.alibaba.fastjson.JSON;
+
 import java.io.Serializable;
 
 /**
@@ -106,5 +108,10 @@ public class MongodbJsonBean implements Serializable{
     public MongodbJsonBean setIs_leaf(Boolean is_leaf) {
         this.is_leaf = is_leaf;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return JSON.toJSONString(this).replace("\"id\"","\"_id\"");
     }
 }
