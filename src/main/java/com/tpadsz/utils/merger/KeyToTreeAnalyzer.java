@@ -71,7 +71,7 @@ public class KeyToTreeAnalyzer implements Runnable{
                     if(latestQueue!=null){
                         enqueueWithWaiting(latestQueue, new BeanOfferEvent<MongodbJsonBean>(null, BeanOfferEventType.EVENT_BEAN_OFFER_END));
                     }
-                    latestQueue=new LinkedBlockingQueue<BeanOfferEvent<MongodbJsonBean>>();
+                    latestQueue=new LinkedBlockingQueue<BeanOfferEvent<MongodbJsonBean>>(EVENT_QUEUE_SIZE);
                     enqueueWithWaiting(latestQueue,new BeanOfferEvent<MongodbJsonBean>(bean, BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
                     latestThread=new Thread(new JsonBeanReceiver(latestQueue));
                     latestThread.start();
