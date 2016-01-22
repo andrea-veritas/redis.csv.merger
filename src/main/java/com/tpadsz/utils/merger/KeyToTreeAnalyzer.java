@@ -22,7 +22,7 @@ public class KeyToTreeAnalyzer implements Runnable{
     {
         this.argv=argv;
     }
-
+    public static final int EVENT_QUEUE_SIZE=100000;
 
     public void run() {
         BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
@@ -53,7 +53,7 @@ public class KeyToTreeAnalyzer implements Runnable{
             // Begin to process the forest.
             while((line=reader.readLine())!=null){
 
-                BlockingQueue<BeanOfferEvent<BeanOfferEventType>> queue=new LinkedBlockingQueue<BeanOfferEvent<BeanOfferEventType>>();
+                BlockingQueue<BeanOfferEvent<BeanOfferEventType>> queue=new LinkedBlockingQueue<BeanOfferEvent<BeanOfferEventType>>(EVENT_QUEUE_SIZE);
                 MongodbJsonBean bean = MongodbJsonBean.fromCSV(line);
 
                 if(IdStringToTreeConverter.getRoot(bean.get_id()).equals(root)==false){
@@ -63,7 +63,12 @@ public class KeyToTreeAnalyzer implements Runnable{
                         latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(null,BeanOfferEventType.EVENT_BEAN_OFFER_END));
                     }
                     latestQueue=new LinkedBlockingQueue<BeanOfferEvent<MongodbJsonBean>>();
-                    latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(bean,BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
+                    boolean isEnqueued=false;
+
+                    do {
+                        isEnqueued=latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(bean, BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
+                    }while(!isEnqueued);
+
                     latestThread=new Thread(new JsonBeanReceiver(latestQueue));
                     latestThread.start();
 
@@ -224,6 +229,6 @@ class JsonBeanReceiver implements  Runnable{
         fTree.createNewFile();
         out=new BufferedWriter(new FileWriter(fTree));
 
-        System.out.println(String.format("Created tree file: %s",fTree.getAbsolutePath()));
+        System.out.println(String.format("Created tree file: %s", fTree.getAbsolutePath()));
     }
 }
