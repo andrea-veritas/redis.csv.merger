@@ -120,7 +120,7 @@ class JsonBeanReceiver implements  Runnable{
             try {
                 BeanOfferEvent<MongodbJsonBean> event = null;
                 synchronized (queue) {
-                    queue.poll(1000L, TimeUnit.MILLISECONDS);
+                    event=queue.poll(1000L, TimeUnit.MILLISECONDS);
                 }
                 System.out.println(String.format("Received BeanOfferEvent: %s",event.getElement()==null?"null":event.getElement().toString()));
 
