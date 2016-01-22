@@ -15,20 +15,20 @@ public class TestKeyAnalyzer {
     ByteArrayOutputStream out=new ByteArrayOutputStream();
 
 
-    @Before
+    //@Before
     public void setUp() throws UnsupportedEncodingException {
         System.setIn(new ByteArrayInputStream("\"abcd\",125".getBytes("UTF-8")));
         System.setOut(new PrintStream(out));
     }
 
-    @Test
+    //@Test
     public void testConvert() throws UnsupportedEncodingException {
         new KeyToTreeAnalyzer(new String[]{}).run();
         String json=new String(out.toByteArray(),"UTF-8");
         assert JSON.parse(json)!=null;
     }
 
-    @After
+    //@After
     public void tearDown() throws IOException {
         if(out!=null){
             out.close();
