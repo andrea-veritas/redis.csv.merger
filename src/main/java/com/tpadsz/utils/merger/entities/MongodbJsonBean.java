@@ -34,7 +34,10 @@ public class MongodbJsonBean implements Serializable{
             parent=line.substring(1,line.lastIndexOf("_"));
         }else if(_id.contains("-")){
             depth=_id.split("-").length - 1;
-            parent=line.substring(0,line.lastIndexOf("-"));
+            parent=line.substring(1,line.lastIndexOf("-"));
+
+            // Replace all "-" splitter to "_"
+            _id=_id.replace("-","_");
         }else{
             depth=0;
             parent="";
