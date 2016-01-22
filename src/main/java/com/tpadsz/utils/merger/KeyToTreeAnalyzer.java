@@ -24,6 +24,15 @@ public class KeyToTreeAnalyzer implements Runnable{
     }
     public static final int EVENT_QUEUE_SIZE=100000;
 
+    private void enqueueWithWaiting(BlockingQueue<BeanOfferEvent<MongodbJsonBean>> queue,BeanOfferEvent event){
+        boolean isEnqueued=false;
+        do{
+            synchronized (queue){
+                isEnqueued=queue.offer(event);
+            }
+        }while (!isEnqueued);
+    }
+
     public void run() {
         BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
         String line=null;
@@ -60,27 +69,21 @@ public class KeyToTreeAnalyzer implements Runnable{
                     // This "if" means we are going to a new tree.
                     root=IdStringToTreeConverter.getRoot(bean.get_id());
                     if(latestQueue!=null){
-                        latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(null,BeanOfferEventType.EVENT_BEAN_OFFER_END));
+                        enqueueWithWaiting(latestQueue, new BeanOfferEvent<MongodbJsonBean>(null, BeanOfferEventType.EVENT_BEAN_OFFER_END));
                     }
                     latestQueue=new LinkedBlockingQueue<BeanOfferEvent<MongodbJsonBean>>();
-                    boolean isEnqueued=false;
-
-                    do {
-                        isEnqueued=latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(bean, BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
-                    }while(!isEnqueued);
-
+                    enqueueWithWaiting(latestQueue,new BeanOfferEvent<MongodbJsonBean>(bean, BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
                     latestThread=new Thread(new JsonBeanReceiver(latestQueue));
                     latestThread.start();
 
                 }else{
-                    latestQueue.offer(new BeanOfferEvent<MongodbJsonBean>(bean,BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
+                    enqueueWithWaiting(latestQueue, new BeanOfferEvent<MongodbJsonBean>(bean, BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
                 }
 
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
 
         try {
             reader.close();
@@ -115,8 +118,10 @@ class JsonBeanReceiver implements  Runnable{
 
         while(true) {
             try {
-                BeanOfferEvent<MongodbJsonBean> event = queue.poll(1000L, TimeUnit.MILLISECONDS);
-
+                BeanOfferEvent<MongodbJsonBean> event = null;
+                synchronized (queue) {
+                    queue.poll(1000L, TimeUnit.MILLISECONDS);
+                }
                 System.out.println(String.format("Received BeanOfferEvent: %s",event.getElement()==null?"null":event.getElement().toString()));
 
                 if (BeanOfferEventType.EVENT_BEAN_OFFER_ADD.equals(event.getEventType())) {
