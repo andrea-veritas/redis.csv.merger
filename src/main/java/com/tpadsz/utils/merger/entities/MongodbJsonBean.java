@@ -44,7 +44,7 @@ public class MongodbJsonBean implements Serializable{
             depth=0;
             parent="";
         }
-
+        _id=_id.replace("\"","");
         return new MongodbJsonBean().set_id(_id).setDepth(depth).setParent(parent).setSize_in_bytes(size_in_bytes).setIs_leaf(is_leaf);
 
 
@@ -112,6 +112,6 @@ public class MongodbJsonBean implements Serializable{
 
     @Override
     public String toString() {
-        return JSON.toJSONString(this).replace("\"id\"","\"_id\"");
+        return JSON.toJSONString(this);
     }
 }

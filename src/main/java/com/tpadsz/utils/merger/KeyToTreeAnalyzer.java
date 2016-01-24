@@ -24,6 +24,7 @@ public class KeyToTreeAnalyzer implements Runnable{
     }
     public static final int EVENT_QUEUE_SIZE=100000;
 
+
     private void enqueueWithWaiting(BlockingQueue<BeanOfferEvent<MongodbJsonBean>> queue,BeanOfferEvent event){
         boolean isEnqueued=false;
         do{
@@ -141,7 +142,7 @@ class JsonBeanReceiver implements  Runnable{
                             } catch (Exception e) {
                                 System.err.println(e.getMessage());
                             }
-                            Thread.currentThread().interrupt();
+                            return;
                         }
                     }
                     try {
@@ -157,7 +158,7 @@ class JsonBeanReceiver implements  Runnable{
                         } catch (Exception e) {
                             System.err.println(e.getMessage());
                         }
-                        Thread.currentThread().interrupt();
+                        return;
                     }
 
                     if(_id.contains("_")){
@@ -190,7 +191,7 @@ class JsonBeanReceiver implements  Runnable{
                             } catch (Exception e1) {
                                 System.err.println(e1.getMessage());
                             }
-                            Thread.currentThread().interrupt();
+                            return;
                         }
                     }
 
@@ -199,7 +200,7 @@ class JsonBeanReceiver implements  Runnable{
                     } catch (Exception e) {
                         System.err.println(e.getMessage());
                     }finally {
-                        Thread.currentThread().interrupt();
+                        return;
                     }
                 }
 
@@ -211,7 +212,7 @@ class JsonBeanReceiver implements  Runnable{
                     } catch (Exception e1) {
                         System.err.println(e1.getMessage());
                     }
-                    Thread.currentThread().interrupt();
+                    return;
                 }
             }
         }
