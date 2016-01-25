@@ -3,11 +3,13 @@ package com.tpadsz.utils.merger;
 import com.tpadsz.utils.merger.contants.BeanOfferEventType;
 import com.tpadsz.utils.merger.entities.BeanOfferEvent;
 import com.tpadsz.utils.merger.entities.MongodbJsonBean;
+import com.tpadsz.utils.merger.entities.PathBean;
+import com.tpadsz.utils.merger.status.PathObject;
+import com.tpadsz.utils.merger.status.PathStatus;
 
 import java.io.*;
 import java.lang.ref.SoftReference;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -68,7 +70,7 @@ public class KeyToTreeAnalyzer implements Runnable{
 
                 if(IdStringToPathsConverter.getRoot(bean.get_id()).equals(root)==false){
                     // This "if" means we are going to a new tree.
-                    root= IdStringToPathsConverter.getRoot(bean.get_id());
+                    root=IdStringToPathsConverter.getRoot(bean.get_id());
                     if(latestQueue!=null){
                         enqueueWithWaiting(latestQueue, new BeanOfferEvent<MongodbJsonBean>(null, BeanOfferEventType.EVENT_BEAN_OFFER_END));
                     }
@@ -106,8 +108,12 @@ class JsonBeanReceiver implements  Runnable{
     //Map<String,Long> pathSizeMap=new HashMap<String, Long>();
 
 
-    SoftReference<Map<String,Long>> refMap=new SoftReference<Map<String, Long>>(new HashMap<String, Long>());
+//    SoftReference<Map<String,Long>> refMap=new SoftReference<Map<String, Long>>(new HashMap<String, Long>());
+//    PathBean root=null;
 
+
+    List<String> paths=null;
+    List<Long> sizes=null;
 
     BlockingQueue<BeanOfferEvent<MongodbJsonBean>> queue;
     public JsonBeanReceiver(BlockingQueue<BeanOfferEvent<MongodbJsonBean>> queue) {
@@ -116,12 +122,13 @@ class JsonBeanReceiver implements  Runnable{
     public void run() {
         int retryCounter=0;
 
-
+        PathStatus status=new PathStatus();
         while(true) {
             try {
                 BeanOfferEvent<MongodbJsonBean> event = null;
+
                 synchronized (queue) {
-                    event=queue.poll(1000L, TimeUnit.MILLISECONDS);
+                    event = queue.poll(1000L, TimeUnit.MILLISECONDS);
                 }
                 System.out.println(String.format("Received BeanOfferEvent: %s",event.getElement()==null?"null":event.getElement().toString()));
 
@@ -148,9 +155,9 @@ class JsonBeanReceiver implements  Runnable{
                     try {
                         String json=event.getElement().toString();
                         out.write(json);
-                        System.out.println(String.format("Write leaf to buffer: %s",json));
-
                         out.newLine();
+                        System.out.println(String.format("Write leaf to buffer: %s", json));
+
                     } catch (IOException ex) {
                         System.err.println(String.format("Fatal! Cannot write to file %s\nwith _id %s\nException: %s",fTree.getAbsolutePath(),_id,ex.getMessage()));
                         try {
@@ -161,40 +168,48 @@ class JsonBeanReceiver implements  Runnable{
                         return;
                     }
 
-                    if(_id.contains("_")){
-                        String[] paths=new IdStringToPathsConverter(_id).getPathStrings();
-                        // ignore the last path which must be the path to the leaf node.
-                        for(int i=0;i<paths.length-1;i++){
-                            String path=paths[i];
-                            if(refMap.get().containsKey(path)){
-                                refMap.get().put(path, refMap.get().get(path) + event.getElement().getSize_in_bytes());
-                            }else{
-                                refMap.get().put(path, event.getElement().getSize_in_bytes());
-                            }
-                        }
+                    if(_id.contains("_")) {
+                        String[] paths = new IdStringToPathsConverter(_id).getPathStrings();
+                        paths = Arrays.copyOfRange(paths, 0, paths.length - 1);
+                        List<PathObject> pathsOut = status.enroll(paths, event.getElement().getSize_in_bytes());
+
+                        writeOutPaths(pathsOut);
+
+//                        // ignore the last path which must be the path to the leaf node.
+//                        for(int i=0;i<paths.length-1;i++){
+//                            String path=paths[i];
+//                            if(refMap.get().containsKey(path)){
+//                                refMap.get().put(path, refMap.get().get(path) + event.getElement().getSize_in_bytes());
+//                            }else{
+//                                refMap.get().put(path, event.getElement().getSize_in_bytes());
+//                            }
+//                        }
+
+
                     }
 
                 } else if (BeanOfferEventType.EVENT_BEAN_OFFER_END.equals(event.getEventType())) {
                     System.out.println(String.format("Received end event for path"));
-                    for(String path:refMap.get().keySet()){
-                        Long size_in_bytes=refMap.get().get(path);
-                        String csvLine=String.format("\"%s\",%s",path,Long.toString(size_in_bytes));
-                        String json=MongodbJsonBean.fromCSV(csvLine).setIs_leaf(false).toString();
-                        try {
-                            out.write(json);
-                            System.out.println(String.format("Writing analyzed path to buffer: %s",json));
-                            out.newLine();
-                        } catch (IOException e) {
-                            System.err.println(e.getMessage());
-                            try {
-                                finish();
-                            } catch (Exception e1) {
-                                System.err.println(e1.getMessage());
-                            }
-                            return;
-                        }
-                    }
+//                    for(String path:refMap.get().keySet()){
+//                        Long size_in_bytes=refMap.get().get(path);
+//                        String csvLine=String.format("\"%s\",%s",path,Long.toString(size_in_bytes));
+//                        String json=MongodbJsonBean.fromCSV(csvLine).setIs_leaf(false).toString();
+//                        try {
+//                            out.write(json);
+//                            System.out.println(String.format("Writing analyzed path to buffer: %s",json));
+//                            out.newLine();
+//                        } catch (IOException e) {
+//                            System.err.println(e.getMessage());
+//                            try {
+//                                finish();
+//                            } catch (Exception e1) {
+//                                System.err.println(e1.getMessage());
+//                            }
+//                            return;
+//                        }
+//                    }
 
+                    writeOutPaths(status.getStatus());
                     try {
                         finish();
                     } catch (Exception e) {
@@ -219,8 +234,32 @@ class JsonBeanReceiver implements  Runnable{
 
     }
 
+    private void writeOutPaths(List<PathObject> pathsOut){
+        if(pathsOut!=null) {
+            for (PathObject obj : pathsOut) {
+                String path = obj.getKey();
+                Long size_in_bytes = obj.getSize_in_bytes();
+                String csvLine = String.format("\"%s\",%s", path, Long.toString(size_in_bytes));
+                String json = MongodbJsonBean.fromCSV(csvLine).setIs_leaf(false).toString();
+                try {
+                    out.write(json);
+                    out.newLine();
+                } catch (IOException e) {
+                    System.err.println(e.getMessage());
+                    System.err.println(e.getCause());
+                    try {
+                        finish();
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
+                }
+
+            }
+        }
+    }
+
     private void finish() throws Exception{
-        refMap.clear();
+//        refMap.clear();
         if(out!=null){
             out.flush();
             out.close();
