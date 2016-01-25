@@ -1,6 +1,6 @@
 package com.tpadsz.utils.merger.test;
 
-import com.tpadsz.utils.merger.IdStringToTreeConverter;
+import com.tpadsz.utils.merger.IdStringToPathsConverter;
 import org.junit.Test;
 
 /**
@@ -10,7 +10,7 @@ public class TestStringIdToTree {
     @Test
     public void testConvertSingleNode(){
         String _id="uic";
-        String path[]=new IdStringToTreeConverter(_id).getTreePath();
+        String path[]=new IdStringToPathsConverter(_id).getPathStrings();
         assert path!=null;
         assert path.length==1;
         assert path[0].equals("uic");
@@ -20,7 +20,7 @@ public class TestStringIdToTree {
     @Test
     public void testConvertDualNodes(){
         String _id="uic_cic";
-        String path[]=new IdStringToTreeConverter(_id).getTreePath();
+        String path[]=new IdStringToPathsConverter(_id).getPathStrings();
         assert path!=null;
 
         for(String str:path){
@@ -36,7 +36,7 @@ public class TestStringIdToTree {
     @Test
     public void testConvertTripleNodes(){
         String _id="uic_cic_ctc";
-        String path[]=new IdStringToTreeConverter(_id).getTreePath();
+        String path[]=new IdStringToPathsConverter(_id).getPathStrings();
         assert path!=null;
 
         for(String str:path){
@@ -53,7 +53,7 @@ public class TestStringIdToTree {
     @Test
     public void testConvertMultipleNodes(){
         String _id="uic_cic_ctc_a_b_c_d";
-        String path[]=new IdStringToTreeConverter(_id).getTreePath();
+        String path[]=new IdStringToPathsConverter(_id).getPathStrings();
         assert path!=null;
 
         for(String str:path){
@@ -68,6 +68,7 @@ public class TestStringIdToTree {
         assert path[4].equals("uic_cic_ctc_a_b");
         assert path[5].equals("uic_cic_ctc_a_b_c");
         assert path[6].equals("uic_cic_ctc_a_b_c_d");
+
 
     }
 

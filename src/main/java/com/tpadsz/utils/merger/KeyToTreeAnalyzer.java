@@ -66,9 +66,9 @@ public class KeyToTreeAnalyzer implements Runnable{
                 BlockingQueue<BeanOfferEvent<BeanOfferEventType>> queue=new LinkedBlockingQueue<BeanOfferEvent<BeanOfferEventType>>(EVENT_QUEUE_SIZE);
                 MongodbJsonBean bean = MongodbJsonBean.fromCSV(line);
 
-                if(IdStringToTreeConverter.getRoot(bean.get_id()).equals(root)==false){
+                if(IdStringToPathsConverter.getRoot(bean.get_id()).equals(root)==false){
                     // This "if" means we are going to a new tree.
-                    root=IdStringToTreeConverter.getRoot(bean.get_id());
+                    root= IdStringToPathsConverter.getRoot(bean.get_id());
                     if(latestQueue!=null){
                         enqueueWithWaiting(latestQueue, new BeanOfferEvent<MongodbJsonBean>(null, BeanOfferEventType.EVENT_BEAN_OFFER_END));
                     }
@@ -162,7 +162,7 @@ class JsonBeanReceiver implements  Runnable{
                     }
 
                     if(_id.contains("_")){
-                        String[] paths=new IdStringToTreeConverter(_id).getTreePath();
+                        String[] paths=new IdStringToPathsConverter(_id).getPathStrings();
                         // ignore the last path which must be the path to the leaf node.
                         for(int i=0;i<paths.length-1;i++){
                             String path=paths[i];
@@ -237,4 +237,6 @@ class JsonBeanReceiver implements  Runnable{
 
         System.out.println(String.format("Created tree file: %s", fTree.getAbsolutePath()));
     }
+
+
 }

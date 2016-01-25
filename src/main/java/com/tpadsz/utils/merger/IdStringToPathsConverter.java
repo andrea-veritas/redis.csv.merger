@@ -2,18 +2,17 @@ package com.tpadsz.utils.merger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Created by roger.wang on 2016/1/22.
  *
  * Converts "_" split ids to paths.
  */
-public class IdStringToTreeConverter {
+public class IdStringToPathsConverter {
     private String _id;
     private String treePath[];
 
-    public IdStringToTreeConverter(String _id){
+    public IdStringToPathsConverter(String _id){
         this._id=_id;
     }
 
@@ -56,12 +55,12 @@ public class IdStringToTreeConverter {
         return this.treePath;
     }
 
-    public String[] getTreePath(){
+    public String[] getPathStrings(){
         return this.treePath==null?exec():this.treePath;
     }
 
     public static String getRoot(String _id){
-        String[] path=new IdStringToTreeConverter(_id).getTreePath();
+        String[] path=new IdStringToPathsConverter(_id).getPathStrings();
         if(path==null || path.length<1){
             return _id;
         }else{
