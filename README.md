@@ -1,17 +1,16 @@
 # Prerequisite - MergeSort
 
 ## Split redis.csv into smaller files and sort them individually
-split -l 200000 redis.csv  
-mkdir pars1 pars2 pars3 pars4  
-mv xa? xb? pars1/  
-mv xc? xd? pars2/  
-mv xe? xf? pars3/  
-mv xg? pars4/  
-
-vim sort.sh
-
+> split -l 200000 redis.csv  
+> mkdir pars1 pars2 pars3 pars4  
+> mv xa? xb? pars1/  
+> mv xc? xd? pars2/  
+> mv xe? xf? pars3/  
+> mv xg? pars4/  
+> vim sort.sh
 ```bash
 #!/bin/bash
+# sort.sh 
 echo `date`
     for f in x* 
     do 
@@ -20,21 +19,18 @@ echo `date`
 echo `date`
 ```
 
-chmod +x sort.sh
+> chmod +x sort.sh
 
-cp sort.sh pars1/  
-cp sort.sh pars2/  
-cp sort.sh pars3/  
-cp sort.sh pars4/  
-
-rm -f sort.sh
-
-vim go.sh
-
-
+> cp sort.sh pars1/  
+> cp sort.sh pars2/  
+> cp sort.sh pars3/  
+> cp sort.sh pars4/  
+> 
+> rm -f sort.sh
+> vim go.sh
 ```bash
 #!/bin/bash
-
+# go.sh
     for f in pars? 
     do 
         cd $f
@@ -44,13 +40,22 @@ vim go.sh
 ```
 
 
-chmod +x go.sh
-
-./go.sh
+> chmod +x go.sh
+> ./go.sh
 
 ## merge the sorted files
-find . -name '*.sort' -print0 | sort -k1 -t, --files0-from=- -S512m -o redis.sorted.csv >sort.out 2>sort.err &
+> find . -name '*.sort' -print0 | sort -k1 -t, --files0-from=- -S512m -o redis.sorted.csv >sort.out 2>sort.err &
 
 ## To verify if the output file is correctly sorted.
-sort -c redis.sorted.csv
+> sort -c redis.sorted.csv  
+
+
+# Running Redis keys analysis
+
+## Remove existing forest files (if necessary)
+
+> rm -rf forrest/
+
+## Run the programme
+> cat redis.sorted.csv | java -cp ./{YOUR_ARTIFACT_JAR_PATH}:{DEPENDENCIES_JAR_PATH} com.tpadsz.utils.merger.KeyToTreeAnalyzer -Xmx{JAVA_HEAP_SIZE}
 
