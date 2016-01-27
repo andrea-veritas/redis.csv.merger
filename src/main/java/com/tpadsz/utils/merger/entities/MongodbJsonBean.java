@@ -26,7 +26,17 @@ public class MongodbJsonBean implements Serializable{
 
 
         String _id=line.split(",")[0].replace("\"","");
-        Long size_in_bytes=Long.parseLong(line.split(",")[1]);
+        Long size_in_bytes=null;
+        try {
+            size_in_bytes = Long.parseLong(line.split(",")[1]);
+        }catch (Throwable t){
+
+            System.err.println(t.getMessage());
+            System.err.println(t.getCause());
+            System.err.println(line);
+
+            size_in_bytes=0L;
+        }
         Integer depth=0;
         String parent="";
         Boolean is_leaf=Boolean.TRUE;
@@ -112,6 +122,6 @@ public class MongodbJsonBean implements Serializable{
 
     @Override
     public String toString() {
-        return JSON.toJSONString(this);
+        return JSON.toJSONString(this).replace("id","_id");
     }
 }

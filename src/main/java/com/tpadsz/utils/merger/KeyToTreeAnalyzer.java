@@ -3,7 +3,6 @@ package com.tpadsz.utils.merger;
 import com.tpadsz.utils.merger.contants.BeanOfferEventType;
 import com.tpadsz.utils.merger.entities.BeanOfferEvent;
 import com.tpadsz.utils.merger.entities.MongodbJsonBean;
-import com.tpadsz.utils.merger.entities.PathBean;
 import com.tpadsz.utils.merger.status.PathObject;
 import com.tpadsz.utils.merger.status.PathStatus;
 
@@ -129,6 +128,10 @@ class JsonBeanReceiver implements  Runnable{
 
                 synchronized (queue) {
                     event = queue.poll(1000L, TimeUnit.MILLISECONDS);
+                }
+                if(event==null){
+                    retryCounter++;
+                    continue;
                 }
                 System.out.println(String.format("Received BeanOfferEvent: %s",event.getElement()==null?"null":event.getElement().toString()));
 
