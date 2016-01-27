@@ -59,3 +59,17 @@ echo `date`
 ## Run the programme
 > cat redis.sorted.csv | java -cp ./{YOUR_ARTIFACT_JAR_PATH}:{DEPENDENCIES_JAR_PATH} com.tpadsz.utils.merger.KeyToTreeAnalyzer -Xmx{JAVA_HEAP_SIZE}
 
+Note: {JAVA_HEAP_SIZE} depends on KeyToTreeAnalyzer.EVENT_QUEUE_SIZE of which default value is 100000 and may approximately consume at least 512MB memory. Reduce this value if the machine which this programme runs on don't have much memory.   
+
+
+```java
+package com.tpadsz.utils.merger.contants;
+
+/**
+ * Created by roger.wang on 2016/1/27.
+ */
+public class Config {
+    public static final int EVENT_QUEUE_SIZE=100000;
+}
+```
+

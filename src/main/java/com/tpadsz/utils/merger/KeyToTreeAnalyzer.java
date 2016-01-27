@@ -1,6 +1,7 @@
 package com.tpadsz.utils.merger;
 
 import com.tpadsz.utils.merger.contants.BeanOfferEventType;
+import com.tpadsz.utils.merger.contants.Config;
 import com.tpadsz.utils.merger.entities.BeanOfferEvent;
 import com.tpadsz.utils.merger.entities.MongodbJsonBean;
 import com.tpadsz.utils.merger.status.PathObject;
@@ -23,7 +24,7 @@ public class KeyToTreeAnalyzer implements Runnable{
     {
         this.argv=argv;
     }
-    public static final int EVENT_QUEUE_SIZE=100000;
+
 
 
     private void enqueueWithWaiting(BlockingQueue<BeanOfferEvent<MongodbJsonBean>> queue,BeanOfferEvent event){
@@ -64,7 +65,7 @@ public class KeyToTreeAnalyzer implements Runnable{
             // Begin to process the forest.
             while((line=reader.readLine())!=null){
 
-                BlockingQueue<BeanOfferEvent<BeanOfferEventType>> queue=new LinkedBlockingQueue<BeanOfferEvent<BeanOfferEventType>>(EVENT_QUEUE_SIZE);
+                BlockingQueue<BeanOfferEvent<BeanOfferEventType>> queue=new LinkedBlockingQueue<BeanOfferEvent<BeanOfferEventType>>(Config.EVENT_QUEUE_SIZE);
                 MongodbJsonBean bean = MongodbJsonBean.fromCSV(line);
 
                 if(IdStringToPathsConverter.getRoot(bean.get_id()).equals(root)==false){
@@ -73,7 +74,7 @@ public class KeyToTreeAnalyzer implements Runnable{
                     if(latestQueue!=null){
                         enqueueWithWaiting(latestQueue, new BeanOfferEvent<MongodbJsonBean>(null, BeanOfferEventType.EVENT_BEAN_OFFER_END));
                     }
-                    latestQueue=new LinkedBlockingQueue<BeanOfferEvent<MongodbJsonBean>>(EVENT_QUEUE_SIZE);
+                    latestQueue=new LinkedBlockingQueue<BeanOfferEvent<MongodbJsonBean>>(Config.EVENT_QUEUE_SIZE);
                     enqueueWithWaiting(latestQueue,new BeanOfferEvent<MongodbJsonBean>(bean, BeanOfferEventType.EVENT_BEAN_OFFER_ADD));
                     latestThread=new Thread(new JsonBeanReceiver(latestQueue));
                     latestThread.start();
